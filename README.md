@@ -145,7 +145,16 @@ git clone https://github.com/Harshpatel112/flight-booking-microservices.git
 cd flight-booking-microservices
 ```
 
-### **2. One-Click Deployment**
+### **2. Setup Environment Variables**
+```bash
+# Copy environment template
+cp .env.example .env
+
+# Edit .env file with your real values
+# See SECURITY.md for detailed instructions
+```
+
+### **3. One-Click Deployment**
 ```bash
 # Windows - Deploy everything with Docker
 deploy-docker.bat
@@ -264,6 +273,7 @@ POST /api/v1/payments/webhook - Razorpay webhook
 |----------|-------------|
 | [🚀 DEPLOYMENT.md](DEPLOYMENT.md) | Complete deployment guide for all environments |
 | [🧪 TESTING_GUIDE.md](TESTING_GUIDE.md) | Comprehensive testing instructions |
+| [🔐 SECURITY.md](SECURITY.md) | Security configuration and environment variables |
 | [🤝 CONTRIBUTING.md](CONTRIBUTING.md) | Guidelines for contributors |
 | [📄 LICENSE](LICENSE) | MIT License |
 

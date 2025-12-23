@@ -147,8 +147,8 @@ docker service scale flight-booking_booking-service=3
 Create `.env` file:
 ```bash
 # Database
-DB_PASSWORD=H@rsh123
-MYSQL_ROOT_PASSWORD=H@rsh123
+DB_PASSWORD=your_strong_database_password
+MYSQL_ROOT_PASSWORD=your_mysql_root_password
 
 # JWT
 JWT_SECRET=mySecretKey123456789012345678901234567890
@@ -227,8 +227,8 @@ server:
 ### Secrets Management
 ```bash
 # Using Docker secrets
-echo "H@rsh123" | docker secret create db_password -
-echo "mySecretKey123456789012345678901234567890" | docker secret create jwt_secret -
+echo "your_secure_password" | docker secret create db_password -
+echo "your_jwt_secret_key" | docker secret create jwt_secret -
 
 # Update docker-compose.yml
 services:

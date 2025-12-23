@@ -23,6 +23,12 @@
 hs_err_pid*
 replay_pid*
 
+# Maven wrapper (keep these - industry best practice)
+# .mvn/
+# mvnw
+# mvnw.cmd
+# HELP.md
+
 # Maven
 target/
 pom.xml.tag

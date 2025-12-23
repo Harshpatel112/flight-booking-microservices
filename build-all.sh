@@ -23,11 +23,17 @@ print_error() {
     echo -e "${RED}[ERROR]${NC} $1"
 }
 
-# Check if Maven is installed
-if ! command -v mvn &> /dev/null; then
-    print_error "Maven is not installed. Please install Maven first."
-    exit 1
-fi
+# Check if Maven Wrapper exists, otherwise use Maven
+check_maven() {
+    if [ -f "./mvnw" ]; then
+        echo "./mvnw"
+    elif command -v mvn &> /dev/null; then
+        echo "mvn"
+    else
+        print_error "Neither Maven Wrapper nor Maven is available. Please install Maven."
+        exit 1
+    fi
+}
 
 # Services to build
 services=("ServiceRegistry" "UserService" "FlightService" "BookingService" "PaymentService" "NotificationService" "API-Gateway")
@@ -38,8 +44,11 @@ for service in "${services[@]}"; do
         print_status "Building $service..."
         cd "$service"
         
+        # Get Maven command (wrapper or regular)
+        MAVEN_CMD=$(check_maven)
+        
         # Clean and package
-        mvn clean package -DskipTests
+        $MAVEN_CMD clean package -DskipTests
         
         if [ $? -eq 0 ]; then
             print_success "$service built successfully"

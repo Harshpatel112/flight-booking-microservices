@@ -22,7 +22,7 @@ document.getElementById('payBtn').onclick = async function () {
         }
 
         const options = {
-            key: "rzp_test_a8KFlpLpfjI4QE", 
+            key: "{{RAZORPAY_KEY_ID}}", // This should be dynamically injected 
             amount: order.amount,
             currency: order.currency,
             name: "Flight Booking",
