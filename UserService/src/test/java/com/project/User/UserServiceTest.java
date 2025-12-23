@@ -1,7 +1,5 @@
 package com.project.User;
 
-
-
 import com.project.User.Repository.UserRepository;
 import com.project.User.Service.UserService;
 import com.project.User.enm.Role;
@@ -12,9 +10,11 @@ import com.project.User.security.JwtUtil;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.mockito.*;
+import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.password.PasswordEncoder;
 
+import java.util.Map;
 import java.util.Optional;
 
 import static org.junit.jupiter.api.Assertions.*;
@@ -42,39 +42,81 @@ class UserServiceTest {
 
         testUser = new User();
         testUser.setUsername("john");
+        testUser.setEmail("john@example.com");
         testUser.setPassword("pass123");
         testUser.setRole(Role.USER);
     }
 
     @Test
     void testRegister_Success() {
-        when(passwordEncoder.encode(anyString())).thenReturn("encodedPass");
+        when(repository.findByUsername("john")).thenReturn(Optional.empty());
+        when(repository.findByEmail("john@example.com")).thenReturn(Optional.empty());
+        when(passwordEncoder.encode("pass123")).thenReturn("encodedPass");
 
         String response = userService.register(testUser);
 
         assertEquals("User registered successfully", response);
-        verify(repository, times(1)).save(testUser);
         assertEquals("encodedPass", testUser.getPassword());
+        verify(repository, times(1)).save(testUser);
     }
 
     @Test
-    void testLogin_Success() {
+    void testLoginWithUsername_Success() {
         when(repository.findByUsername("john")).thenReturn(Optional.of(testUser));
         when(passwordEncoder.matches("pass123", "pass123")).thenReturn(true);
         when(jwtUtil.generateToken("john", "USER")).thenReturn("mockedToken");
 
-        String token = userService.login("john", "pass123");
+        ResponseEntity<?> response = userService.login("john", "pass123", "username");
 
-        assertEquals("mockedToken", token);
+        assertEquals(200, response.getStatusCodeValue());
+        Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
+        assertEquals("mockedToken", responseBody.get("token"));
+        assertEquals("USER", responseBody.get("role"));
+    }
+
+    @Test
+    void testLoginWithEmail_Success() {
+        when(repository.findByEmail("john@example.com")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("pass123", "pass123")).thenReturn(true);
+        when(jwtUtil.generateToken("john", "USER")).thenReturn("mockedToken");
+
+        ResponseEntity<?> response = userService.login("john@example.com", "pass123", "email");
+
+        assertEquals(200, response.getStatusCodeValue());
+        Map<String, Object> responseBody = (Map<String, Object>) response.getBody();
+        assertEquals("mockedToken", responseBody.get("token"));
+        assertEquals("USER", responseBody.get("role"));
     }
 
     @Test
     void testLogin_UserNotFound() {
         when(repository.findByUsername("invalid")).thenReturn(Optional.empty());
 
-        assertThrows(UserNotFoundException.class, () -> {
-            userService.login("invalid", "anyPass");
-        });
+        ResponseEntity<?> response = userService.login("invalid", "anyPass", "username");
+
+        assertEquals(400, response.getStatusCodeValue());
+        assertTrue(((Map<?, ?>) response.getBody()).get("error").toString().contains("Invalid"));
+    }
+
+    @Test
+    void testLogin_EmailNotFound() {
+        when(repository.findByEmail("invalid@example.com")).thenReturn(Optional.empty());
+
+        ResponseEntity<?> response = userService.login("invalid@example.com", "anyPass", "email");
+
+        assertEquals(400, response.getStatusCodeValue());
+        assertTrue(((Map<?, ?>) response.getBody()).get("error").toString().contains("Invalid"));
+    }
+
+    @Test
+    void testLogin_WrongPassword() {
+        when(repository.findByUsername("john")).thenReturn(Optional.of(testUser));
+        when(passwordEncoder.matches("wrong", "pass123")).thenReturn(false);
+
+        ResponseEntity<?> response = userService.login("john", "wrong", "username");
+
+        assertEquals(400, response.getStatusCodeValue());
+        assertTrue(((Map<?, ?>) response.getBody()).get("error").toString().contains("Invalid"));
     }
 
     @Test

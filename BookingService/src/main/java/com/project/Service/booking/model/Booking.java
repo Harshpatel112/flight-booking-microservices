@@ -1,6 +1,8 @@
 package com.project.Service.booking.model;
 
 import java.time.LocalDate;
+import java.util.List;
+
 import com.fasterxml.jackson.annotation.JsonFormat;
 import com.project.Service.booking.enm.BookingStatus;
 
@@ -35,6 +37,20 @@ public class Booking {
 
     @Enumerated(EnumType.STRING)
     private BookingStatus bookingStatus = BookingStatus.PENDING;
+    
+    @OneToMany(mappedBy = "booking", cascade = CascadeType.ALL, orphanRemoval = true)
+    private List<Passenger> passengersInfo;
+
+    public List<Passenger> getPassengersInfo() { return passengersInfo; }
+    public void setPassengersInfo(List<Passenger> passengersInfo) {
+        this.passengersInfo = passengersInfo;
+        if (passengersInfo != null) {
+            for (Passenger p : passengersInfo) {
+                p.setBooking(this);
+            }
+        }
+    }
+
 
     public Booking() {}
 

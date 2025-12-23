@@ -1,16 +1,16 @@
 package com.project.User.model;
 
 public class LoginRequest {
-    private String username;
+    private String identifier; // can be email or username
     private String password;
+    private String type; // "email" or "username"
 
-    // Getters and setters
-    public String getUsername() {
-        return username;
+    public String getIdentifier() {
+        return identifier;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+    public void setIdentifier(String identifier) {
+        this.identifier = identifier;
     }
 
     public String getPassword() {
@@ -19,5 +19,13 @@ public class LoginRequest {
 
     public void setPassword(String password) {
         this.password = password;
+    }
+
+    public String getType() {
+        return type;
+    }
+
+    public void setType(String type) {
+        this.type = type;
     }
 }

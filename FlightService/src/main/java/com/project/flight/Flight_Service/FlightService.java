@@ -131,40 +131,36 @@ public class FlightService {
     }
 
     private FlightDetailsDTO extractFlightDetails(FlightSchedule schedule) {
-        FlightDetailsDTO dto = new FlightDetailsDTO();
         Flight flight = schedule.getFlight();
 
+        Map<String, Integer> availableSeatsPerClass = new HashMap<>();
+        Map<String, Double> pricePerClass = new HashMap<>();
+
         if (flight != null) {
-            dto.setFlightNumber(flight.getFlightNumber());
-            dto.setAirline(flight.getAirline());
+            List<Seat> seats = seatRepository.findByFlight_FlightNumber(flight.getFlightNumber());
+
+            for (Seat seat : seats) {
+                String seatClass = seat.getSeatClass().name();
+                availableSeatsPerClass.merge(seatClass, seat.getAvailableSeats(), Integer::sum);
+                pricePerClass.putIfAbsent(seatClass, seat.getDynamicFare()); // only first fare is taken
+            }
         }
 
-        dto.setSource(schedule.getSource());
-        dto.setDestination(schedule.getDestination());
-        dto.setDepartureDate(schedule.getDepartureDate());
-        dto.setDepartureTime(schedule.getDepartureTime());
-        dto.setArrivalTime(schedule.getArrivalTime());
-        dto.setDuration(schedule.getDuration());
-
-        List<Seat> seats = (flight != null)
-                ? seatRepository.findByFlight_FlightNumber(flight.getFlightNumber())
-                : Collections.emptyList();
-
-        Map<String, Integer> availableSeatsPerClass = seats.stream().collect(Collectors.toMap(
-                seat -> seat.getSeatClass().name(),
-                Seat::getAvailableSeats
-        ));
-
-        Map<String, Double> pricePerClass = seats.stream().collect(Collectors.toMap(
-                seat -> seat.getSeatClass().name(),
-                Seat::getDynamicFare
-        ));
-
-        dto.setAvailableSeatsPerClass(availableSeatsPerClass);
-        dto.setPricePerClass(pricePerClass);
-
-        return dto;
+        return new FlightDetailsDTO(
+            flight != null ? flight.getFlightNumber() : null,
+            flight != null ? flight.getAirline() : null,
+            schedule.getSource(),
+            schedule.getDestination(),
+            schedule.getDepartureDate(),
+            schedule.getDepartureTime(),
+            schedule.getArrivalTime(),
+            schedule.getDuration(),
+            availableSeatsPerClass,
+            pricePerClass
+        );
     }
+
+
 
     public boolean reserveSeats(String flightNumber, String seatClass, int passengers) {
         logger.info("Attempting to reserve {} passengers in seat class {} for flight {}", passengers, seatClass, flightNumber);
@@ -219,4 +215,68 @@ public class FlightService {
 
         return extractFlightDetails(schedules.get(0));
     }
+    
+    public long getFlightCount() {
+        logger.info("Fetching total flight count");
+        return flightRepository.count();
+    }
+    
+//    public void deleteFlight(Long id) {
+//        flightRepository.deleteById(id);
+//    }
+    
+    public List<FlightDetailsDTO> getAllFlightDetails() {
+        List<FlightSchedule> schedules = flightScheduleRepository.findAll();
+
+        return schedules.stream()
+                .map(this::extractFlightDetails)
+                .collect(Collectors.toList());
+    }
+   
+    
+    
+    public void deleteByFlightNumber(String flightNumber) {
+        Flight flight = flightRepository.findByFlightNumber(flightNumber)
+            .orElseThrow(() -> new RuntimeException("Flight not found with number: " + flightNumber));
+
+        // First delete associated schedules (if applicable)
+        List<FlightSchedule> schedules = flightScheduleRepository.findByFlight_FlightNumber(flightNumber);
+        flightScheduleRepository.deleteAll(schedules);
+
+        // Delete seats (if you store them separately)
+        List<Seat> seats = seatRepository.findByFlight_FlightNumber(flightNumber);
+        seatRepository.deleteAll(seats);
+
+        // Finally delete the flight
+        flightRepository.delete(flight);
+    }
+    
+    public Flight updateFlight(Long flightId, Flight updatedFlight) {
+        Flight existingFlight = flightRepository.findById(flightId)
+                .orElseThrow(() -> new FlightNotFoundException("Flight not found with ID: " + flightId));
+
+    
+        existingFlight.setFlightNumber(updatedFlight.getFlightNumber());
+        existingFlight.setAirline(updatedFlight.getAirline());
+        existingFlight.setPricePerClass(updatedFlight.getPricePerClass());
+
+      
+        if (updatedFlight.getSchedules() != null && !updatedFlight.getSchedules().isEmpty()) {
+            FlightSchedule updatedSchedule = updatedFlight.getSchedules().get(0);
+            FlightSchedule existingSchedule = existingFlight.getSchedules().get(0); // assuming one schedule
+
+            existingSchedule.setSource(updatedSchedule.getSource());
+            existingSchedule.setDestination(updatedSchedule.getDestination());
+            existingSchedule.setDepartureTime(updatedSchedule.getDepartureTime());
+            existingSchedule.setArrivalTime(updatedSchedule.getArrivalTime());
+
+           
+            flightScheduleRepository.save(existingSchedule);
+        }
+
+        return flightRepository.save(existingFlight);
+    }
+
+
+
 }

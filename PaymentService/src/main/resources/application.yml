@@ -1,0 +1,151 @@
+spring:
+  application:
+    name: PAYMENT-SERVICE
+  profiles:
+    active: ${SPRING_PROFILES_ACTIVE:dev}
+  
+  datasource:
+    url: ${DB_URL:jdbc:mysql://localhost:3306/payment_db}
+    username: ${DB_USERNAME:root}
+    password: ${DB_PASSWORD:H@rsh123}
+    driver-class-name: com.mysql.cj.jdbc.Driver
+    hikari:
+      maximum-pool-size: 20
+      minimum-idle: 5
+      connection-timeout: 30000
+      idle-timeout: 600000
+      max-lifetime: 1800000
+
+  jpa:
+    hibernate:
+      ddl-auto: update
+    show-sql: false
+    database-platform: org.hibernate.dialect.MySQL8Dialect
+    properties:
+      hibernate:
+        format_sql: true
+        use_sql_comments: true
+
+  kafka:
+    bootstrap-servers: ${KAFKA_SERVERS:localhost:9092}
+    producer:
+      key-serializer: org.apache.kafka.common.serialization.StringSerializer
+      value-serializer: org.springframework.kafka.support.serializer.JsonSerializer
+      properties:
+        spring.json.add.type.headers: false
+    consumer:
+      group-id: payment-service-group
+      key-deserializer: org.apache.kafka.common.serialization.StringDeserializer
+      value-deserializer: org.springframework.kafka.support.serializer.JsonDeserializer
+      properties:
+        spring.json.trusted.packages: "*"
+
+server:
+  port: ${SERVER_PORT:8087}
+  servlet:
+    context-path: /api/v1
+
+# Eureka Configuration
+eureka:
+  client:
+    service-url:
+      defaultZone: ${EUREKA_URL:http://localhost:8761/eureka}
+    fetch-registry: true
+    register-with-eureka: true
+  instance:
+    prefer-ip-address: true
+    lease-renewal-interval-in-seconds: 30
+    lease-expiration-duration-in-seconds: 90
+
+# Resilience4j Configuration
+resilience4j:
+  circuitbreaker:
+    instances:
+      bookingService:
+        register-health-indicator: true
+        sliding-window-size: 10
+        minimum-number-of-calls: 5
+        failure-rate-threshold: 50
+        wait-duration-in-open-state: 30s
+      razorpayService:
+        register-health-indicator: true
+        sliding-window-size: 5
+        minimum-number-of-calls: 3
+        failure-rate-threshold: 60
+        wait-duration-in-open-state: 60s
+  retry:
+    instances:
+      bookingService:
+        max-attempts: 3
+        wait-duration: 1s
+      razorpayService:
+        max-attempts: 2
+        wait-duration: 2s
+  timelimiter:
+    instances:
+      bookingService:
+        timeout-duration: 5s
+      razorpayService:
+        timeout-duration: 10s
+
+# Feign Configuration
+feign:
+  client:
+    config:
+      default:
+        connect-timeout: 5000
+        read-timeout: 10000
+        logger-level: basic
+  circuitbreaker:
+    enabled: true
+
+# Management & Monitoring
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,metrics,prometheus,circuitbreakers,retries
+  endpoint:
+    health:
+      show-details: always
+  health:
+    circuitbreakers:
+      enabled: true
+  metrics:
+    export:
+      prometheus:
+        enabled: true
+  tracing:
+    sampling:
+      probability: 1.0
+
+# Logging Configuration
+logging:
+  level:
+    com.project.Service.payment: INFO
+    org.springframework.cloud.openfeign: DEBUG
+    resilience4j: DEBUG
+  pattern:
+    console: "%d{yyyy-MM-dd HH:mm:ss} [%thread] %-5level [%X{traceId:-},%X{spanId:-}] %logger{36} - %msg%n"
+
+# Razorpay Configuration
+razorpay:
+  key_id: ${RAZORPAY_KEY_ID:rzp_test_a8KFlpLpfjI4QE}
+  key_secret: ${RAZORPAY_KEY_SECRET:cw4nkSG0VLga6i0NiqYF5kjG}
+  webhook_secret: ${RAZORPAY_WEBHOOK_SECRET:your_webhook_secret}
+
+# Application Specific Configuration
+app:
+  payment:
+    timeout-minutes: 15
+    max-retry-attempts: 3
+    supported-currencies:
+      - INR
+      - USD
+      - EUR
+  events:
+    topics:
+      payment-initiated: payment.initiated
+      payment-completed: payment.completed
+      payment-failed: payment.failed
+      payment-refunded: payment.refunded

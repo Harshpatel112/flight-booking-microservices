@@ -4,6 +4,7 @@ import java.time.LocalDate;
 import java.time.LocalTime;
 import java.util.List;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import com.project.flight.enm.FlightStatus;
 
 import jakarta.persistence.*;
@@ -15,7 +16,8 @@ public class FlightSchedule {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long scheduleId;
-
+    
+    @JsonIgnore
     @ManyToOne
     @JoinColumn(name = "flight_id", nullable = false)
     private Flight flight;

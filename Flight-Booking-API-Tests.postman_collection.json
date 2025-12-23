@@ -1,0 +1,308 @@
+{
+  "info": {
+    "name": "Flight Booking API Tests",
+    "description": "Complete API testing collection for Flight Booking Microservices",
+    "schema": "https://schema.getpostman.com/json/collection/v2.1.0/collection.json"
+  },
+  "variable": [
+    {
+      "key": "gateway_url",
+      "value": "http://localhost:8085",
+      "type": "string"
+    },
+    {
+      "key": "jwt_token",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "booking_id",
+      "value": "",
+      "type": "string"
+    },
+    {
+      "key": "user_id",
+      "value": "",
+      "type": "string"
+    }
+  ],
+  "item": [
+    {
+      "name": "1. User Management",
+      "item": [
+        {
+          "name": "Register User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('user_id', response.id);",
+                  "    pm.test('User registered successfully', function () {",
+                  "        pm.expect(response.username).to.eql('testuser123');",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"username\": \"testuser123\",\n  \"email\": \"test@example.com\",\n  \"password\": \"Test@123456\",\n  \"confirmPassword\": \"Test@123456\",\n  \"title\": \"Mr\",\n  \"firstName\": \"John\",\n  \"lastName\": \"Doe\",\n  \"phoneNumber\": \"+919876543210\",\n  \"gender\": \"MALE\",\n  \"dateOfBirth\": \"1990-01-01\",\n  \"nationality\": \"Indian\",\n  \"acceptTermsAndConditions\": true,\n  \"acceptPrivacyPolicy\": true\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/user/register",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "user", "register"]
+            }
+          }
+        },
+        {
+          "name": "Login User",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 200) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('jwt_token', response.accessToken);",
+                  "    pm.test('Login successful', function () {",
+                  "        pm.expect(response.accessToken).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"usernameOrEmail\": \"testuser123\",\n  \"password\": \"Test@123456\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/user/login",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "user", "login"]
+            }
+          }
+        },
+        {
+          "name": "Get User Profile",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/user/profile",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "user", "profile"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "2. Flight Management",
+      "item": [
+        {
+          "name": "Search Flights",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/flights/search?origin=Delhi&destination=Mumbai&departureDate=2024-12-25&adults=1&travelClass=ECONOMY",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "flights", "search"],
+              "query": [
+                {
+                  "key": "origin",
+                  "value": "Delhi"
+                },
+                {
+                  "key": "destination",
+                  "value": "Mumbai"
+                },
+                {
+                  "key": "departureDate",
+                  "value": "2024-12-25"
+                },
+                {
+                  "key": "adults",
+                  "value": "1"
+                },
+                {
+                  "key": "travelClass",
+                  "value": "ECONOMY"
+                }
+              ]
+            }
+          }
+        },
+        {
+          "name": "Get Flight Details",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/flights/flight/AI101",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "flights", "flight", "AI101"]
+            }
+          }
+        },
+        {
+          "name": "Get Seat Map",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/flights/flight/AI101/seatmap",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "flights", "flight", "AI101", "seatmap"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "3. Booking Management",
+      "item": [
+        {
+          "name": "Create Booking",
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "exec": [
+                  "if (pm.response.code === 201) {",
+                  "    const response = pm.response.json();",
+                  "    pm.environment.set('booking_id', response.bookingId);",
+                  "    pm.test('Booking created successfully', function () {",
+                  "        pm.expect(response.bookingId).to.not.be.empty;",
+                  "    });",
+                  "}"
+                ]
+              }
+            }
+          ],
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"AI101\",\n  \"travelClass\": \"ECONOMY\",\n  \"departureDate\": \"2024-12-25\",\n  \"passengers\": [\n    {\n      \"passengerType\": \"ADULT\",\n      \"title\": \"Mr\",\n      \"firstName\": \"John\",\n      \"lastName\": \"Doe\",\n      \"dateOfBirth\": \"1990-01-01\",\n      \"gender\": \"MALE\",\n      \"nationality\": \"Indian\"\n    }\n  ],\n  \"contactEmail\": \"test@example.com\",\n  \"contactPhone\": \"+919876543210\",\n  \"totalAmount\": 5000.00,\n  \"currency\": \"INR\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/bookings/create",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "bookings", "create"]
+            }
+          }
+        },
+        {
+          "name": "Get Booking Details",
+          "request": {
+            "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/bookings/{{booking_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "bookings", "{{booking_id}}"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "4. Payment Management",
+      "item": [
+        {
+          "name": "Process Payment",
+          "request": {
+            "method": "POST",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"bookingId\": \"{{booking_id}}\",\n  \"userId\": {{user_id}},\n  \"amount\": 5000.00,\n  \"currency\": \"INR\",\n  \"paymentMethod\": \"CARD\",\n  \"customerName\": \"John Doe\",\n  \"customerEmail\": \"test@example.com\",\n  \"customerPhone\": \"+919876543210\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/payments/process",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "payments", "process"]
+            }
+          }
+        }
+      ]
+    },
+    {
+      "name": "5. Health Checks",
+      "item": [
+        {
+          "name": "API Gateway Health",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "{{gateway_url}}/actuator/health",
+              "host": ["{{gateway_url}}"],
+              "path": ["actuator", "health"]
+            }
+          }
+        },
+        {
+          "name": "Service Registry",
+          "request": {
+            "method": "GET",
+            "url": {
+              "raw": "http://localhost:8761",
+              "protocol": "http",
+              "host": ["localhost"],
+              "port": "8761"
+            }
+          }
+        }
+      ]
+    }
+  ]
+}

@@ -1,0 +1,175 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_ROOT_PASSWORD: H@rsh123
+          MYSQL_DATABASE: test_db
+        ports:
+          - 3306:3306
+        options: --health-cmd="mysqladmin ping" --health-interval=10s --health-timeout=5s --health-retries=3
+
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Run tests for Service Registry
+      run: |
+        cd ServiceRegistry
+        mvn clean test
+    
+    - name: Run tests for User Service
+      run: |
+        cd UserService
+        mvn clean test
+      env:
+        DB_URL: jdbc:mysql://localhost:3306/test_db
+        DB_USERNAME: root
+        DB_PASSWORD: H@rsh123
+    
+    - name: Run tests for Flight Service
+      run: |
+        cd FlightService
+        mvn clean test
+      env:
+        DB_URL: jdbc:mysql://localhost:3306/test_db
+        DB_USERNAME: root
+        DB_PASSWORD: H@rsh123
+    
+    - name: Run tests for Booking Service
+      run: |
+        cd BookingService
+        mvn clean test
+      env:
+        DB_URL: jdbc:mysql://localhost:3306/test_db
+        DB_USERNAME: root
+        DB_PASSWORD: H@rsh123
+    
+    - name: Run tests for Payment Service
+      run: |
+        cd PaymentService
+        mvn clean test
+      env:
+        DB_URL: jdbc:mysql://localhost:3306/test_db
+        DB_USERNAME: root
+        DB_PASSWORD: H@rsh123
+    
+    - name: Run tests for Notification Service
+      run: |
+        cd NotificationService
+        mvn clean test
+      env:
+        DB_URL: jdbc:mysql://localhost:3306/test_db
+        DB_USERNAME: root
+        DB_PASSWORD: H@rsh123
+    
+    - name: Run tests for API Gateway
+      run: |
+        cd API-Gateway
+        mvn clean test
+
+  build:
+    needs: test
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Set up JDK 17
+      uses: actions/setup-java@v4
+      with:
+        java-version: '17'
+        distribution: 'temurin'
+    
+    - name: Cache Maven packages
+      uses: actions/cache@v3
+      with:
+        path: ~/.m2
+        key: ${{ runner.os }}-m2-${{ hashFiles('**/pom.xml') }}
+        restore-keys: ${{ runner.os }}-m2
+    
+    - name: Build all services
+      run: |
+        chmod +x build-all.bat
+        ./build-all.bat
+    
+    - name: Build Docker images
+      run: |
+        docker-compose build
+    
+    - name: Run Docker health checks
+      run: |
+        docker-compose up -d
+        sleep 60
+        chmod +x check-docker-health.bat
+        ./check-docker-health.bat
+        docker-compose down
+
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Run Trivy vulnerability scanner
+      uses: aquasecurity/trivy-action@master
+      with:
+        scan-type: 'fs'
+        scan-ref: '.'
+        format: 'sarif'
+        output: 'trivy-results.sarif'
+    
+    - name: Upload Trivy scan results to GitHub Security tab
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: 'trivy-results.sarif'
+
+  deploy:
+    needs: [test, build]
+    runs-on: ubuntu-latest
+    if: github.ref == 'refs/heads/main'
+    
+    steps:
+    - uses: actions/checkout@v4
+    
+    - name: Deploy to staging
+      run: |
+        echo "Deploying to staging environment..."
+        # Add your deployment scripts here
+        # Example: kubectl apply -f k8s/
+        # Example: docker-compose -f docker-compose.prod.yml up -d
+    
+    - name: Run integration tests
+      run: |
+        echo "Running integration tests..."
+        # Add integration test commands here
+        # Example: ./test-system.bat
+    
+    - name: Notify deployment status
+      run: |
+        echo "Deployment completed successfully!"
+        # Add notification logic here (Slack, email, etc.)
