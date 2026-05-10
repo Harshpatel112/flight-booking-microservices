@@ -1,78 +1,79 @@
 package com.project.User.model;
 
 import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Builder;
+import lombok.Data;
+import lombok.NoArgsConstructor;
 import com.project.User.enm.Role;
+import java.time.LocalDate;
+import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "users")
+@Data
+@Builder
+@NoArgsConstructor
+@AllArgsConstructor
 public class User {
-
+    
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     
     @Column(nullable = false, unique = true)
     private String username;
+    
     @Column(nullable = false, unique = true)
     private String email;
-    private String password;
-
-    @Enumerated(EnumType.STRING)
-    private Role role; 
-
-
-	public User() {
-		super();
-		// TODO Auto-generated constructor stub
-	}
-
-	public User(Long id, String username, String email, String password, Role role) {
-		super();
-		this.id = id;
-		this.username = username;
-		this.email = email;
-		this.password = password;
-		this.role = role;
-
-	}
-
-	public Long getId() {
-		return id;
-	}
-
-	public void setId(Long id) {
-		this.id = id;
-	}
-
-	public String getUsername() {
-		return username;
-	}
-
-	public void setUsername(String username) {
-		this.username = username;
-	}
-
-	public String getEmail() {
-		return email;
-	}
-
-	public void setEmail(String email) {
-		this.email = email;
-	}
-
-	public String getPassword() {
-		return password;
-	}
-
-	public void setPassword(String password) {
-		this.password = password;
-	}
-
-	public Role getRole() {
-		return role;
-	}
-
-	public void setRole(Role role) {
-		this.role = role;
-	}
     
+    @Column(nullable = false)
+    private String password;
+    
+    @Enumerated(EnumType.STRING)
+    @Builder.Default
+    private Role role = Role.USER;
+    
+    // Personal Information
+    private String title;
+    private String firstName;
+    private String middleName;
+    private String lastName;
+    private String phoneNumber;
+    private String alternatePhoneNumber;
+    private String gender;
+    private LocalDate dateOfBirth;
+    private String nationality;
+    private String maritalStatus;
+    
+    // Account Status
+    @Builder.Default
+    private String accountStatus = "ACTIVE";
+    
+    @Builder.Default
+    private boolean emailVerified = false;
+    
+    @Builder.Default
+    private boolean phoneVerified = false;
+    
+    // Timestamps
+    @Column(name = "registration_date")
+    @Builder.Default
+    private LocalDateTime registrationDate = LocalDateTime.now();
+    
+    @Column(name = "last_login_date")
+    private LocalDateTime lastLoginDate;
+    
+    @Column(name = "created_at")
+    @Builder.Default
+    private LocalDateTime createdAt = LocalDateTime.now();
+    
+    @Column(name = "updated_at")
+    @Builder.Default
+    private LocalDateTime updatedAt = LocalDateTime.now();
+    
+    @PreUpdate
+    public void preUpdate() {
+        this.updatedAt = LocalDateTime.now();
+    }
 }

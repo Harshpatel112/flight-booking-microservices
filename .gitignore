@@ -152,4 +152,4 @@ Thumbs.db
 *.iws
 
 # Eclipse metadata
-.metadata/
+.metadata/.kiro/

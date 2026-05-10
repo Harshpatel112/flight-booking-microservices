@@ -120,6 +120,48 @@
               "path": ["api", "v1", "user", "profile"]
             }
           }
+        },
+        {
+          "name": "Update User Profile",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"firstName\": \"Johnny\",\n  \"lastName\": \"Doe Updated\",\n  \"phoneNumber\": \"+919876543211\"\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/user/profile",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "user", "profile"]
+            }
+          }
+        },
+        {
+          "name": "Delete User Account",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/user/account",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "user", "account"]
+            }
+          }
         }
       ]
     },
@@ -180,6 +222,48 @@
               "path": ["api", "v1", "flights", "flight", "AI101", "seatmap"]
             }
           }
+        },
+        {
+          "name": "Update Flight Details",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"airline\": \"Air India Express\",\n  \"aircraft\": \"Airbus A320\",\n  \"price\": 5500,\n  \"availableSeats\": 40\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/flights/flight/AI101",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "flights", "flight", "AI101"]
+            }
+          }
+        },
+        {
+          "name": "Delete Flight",
+          "request": {
+            "method": "DELETE",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/flights/flight/AI101",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "flights", "flight", "AI101"]
+            }
+          }
         }
       ]
     },
@@ -231,6 +315,48 @@
           "name": "Get Booking Details",
           "request": {
             "method": "GET",
+            "header": [
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/bookings/{{booking_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "bookings", "{{booking_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Update Booking",
+          "request": {
+            "method": "PUT",
+            "header": [
+              {
+                "key": "Content-Type",
+                "value": "application/json"
+              },
+              {
+                "key": "Authorization",
+                "value": "Bearer {{jwt_token}}"
+              }
+            ],
+            "body": {
+              "mode": "raw",
+              "raw": "{\n  \"flightNumber\": \"AI101\",\n  \"status\": \"MODIFIED\",\n  \"passengers\": [\n    {\n      \"title\": \"Mr\",\n      \"firstName\": \"Johnny\",\n      \"lastName\": \"Doe Updated\",\n      \"seatNumber\": \"15A\"\n    }\n  ],\n  \"totalAmount\": 5500.00\n}"
+            },
+            "url": {
+              "raw": "{{gateway_url}}/api/v1/bookings/{{booking_id}}",
+              "host": ["{{gateway_url}}"],
+              "path": ["api", "v1", "bookings", "{{booking_id}}"]
+            }
+          }
+        },
+        {
+          "name": "Cancel Booking",
+          "request": {
+            "method": "DELETE",
             "header": [
               {
                 "key": "Authorization",

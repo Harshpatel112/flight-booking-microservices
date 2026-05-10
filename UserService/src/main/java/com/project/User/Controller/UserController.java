@@ -35,8 +35,8 @@ public class UserController {
         @ApiResponse(responseCode = "400", description = "Invalid input data"),
         @ApiResponse(responseCode = "409", description = "User already exists")
     })
-    public ResponseEntity<UserResponseDTO> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
-        UserResponseDTO response = userService.registerUser(registrationDTO);
+    public ResponseEntity<LoginResponseDTO> register(@Valid @RequestBody UserRegistrationDTO registrationDTO) {
+        LoginResponseDTO response = userService.registerUser(registrationDTO);
         return new ResponseEntity<>(response, HttpStatus.CREATED);
     }
 

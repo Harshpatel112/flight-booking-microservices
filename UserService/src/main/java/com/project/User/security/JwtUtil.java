@@ -2,6 +2,7 @@ package com.project.User.security;
 
 import io.jsonwebtoken.*;
 import io.jsonwebtoken.security.Keys;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.security.Key;
@@ -12,6 +13,7 @@ public class JwtUtil {
 
     private final Key key = Keys.secretKeyFor(SignatureAlgorithm.HS256);
     private final long expiration = 86400000; // 1 day
+    private final long refreshExpiration = 604800000; // 7 days
 
     public String generateToken(String username, String role) {
         return Jwts.builder()
@@ -22,6 +24,24 @@ public class JwtUtil {
                 .signWith(key)
                 .compact();
     }
+    
+    public String generateRefreshToken(String username) {
+        return Jwts.builder()
+                .setSubject(username)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + refreshExpiration))
+                .signWith(key)
+                .compact();
+    }
+    
+    public Date getExpirationTime() {
+        return new Date(System.currentTimeMillis() + expiration);
+    }
+    
+    public Date getRefreshExpirationTime() {
+        return new Date(System.currentTimeMillis() + refreshExpiration);
+    }
+    
     public String extractUsername(String token) {
         return Jwts.parser()
             .setSigningKey(key)
@@ -29,11 +49,6 @@ public class JwtUtil {
             .getBody()
             .getSubject(); // assuming subject is username
     }
-
-//
-//    public String extractUsername(String token) {
-//        return parseClaims(token).getSubject();
-//    }
 
     public String extractRole(String token) {
         return (String) parseClaims(token).get("role");
@@ -47,6 +62,7 @@ public class JwtUtil {
             return false;
         }
     }
+    
     private Claims parseClaims(String token) {
         return Jwts.parserBuilder().setSigningKey(key).build().parseClaimsJws(token).getBody();
     }

@@ -24,13 +24,13 @@ import java.util.Optional;
 @RequiredArgsConstructor
 @Slf4j
 @Transactional
-public class UserServiceImpl {
+public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final PasswordEncoder passwordEncoder;
     private final JwtUtil jwtUtil;
 
-    public UserResponseDTO registerUser(UserRegistrationDTO registrationDTO) {
+    public LoginResponseDTO registerUser(UserRegistrationDTO registrationDTO) {
         log.info("Registering new user with email: {}", registrationDTO.getEmail());
 
         // Validate password confirmation
@@ -64,15 +64,39 @@ public class UserServiceImpl {
                 .maritalStatus(registrationDTO.getMaritalStatus())
                 .role(Role.USER)
                 .accountStatus("ACTIVE")
-                .isEmailVerified(false)
-                .isPhoneVerified(false)
+                .emailVerified(false)
+                .phoneVerified(false)
                 .registrationDate(LocalDateTime.now())
                 .build();
 
         User savedUser = userRepository.save(user);
         log.info("User registered successfully with ID: {}", savedUser.getId());
 
-        return convertToUserResponseDTO(savedUser);
+        // Generate JWT token for immediate login after registration
+        String accessToken = jwtUtil.generateToken(savedUser.getUsername(), savedUser.getRole().name());
+        String refreshToken = jwtUtil.generateRefreshToken(savedUser.getUsername());
+
+        return LoginResponseDTO.builder()
+                .accessToken(accessToken)
+                .refreshToken(refreshToken)
+                .tokenType("Bearer")
+                .expiresIn(86400) // 24 hours in seconds
+                .expiresAt(LocalDateTime.now().plusSeconds(86400))
+                .user(convertToUserSummaryDTO(savedUser))
+                .isFirstLogin(true)
+                .requiresPasswordChange(false)
+                .isTwoFactorRequired(false)
+                .lastLoginTime(LocalDateTime.now())
+                .accountStatus(savedUser.getAccountStatus())
+                .isEmailVerified(savedUser.isEmailVerified())
+                .isPhoneVerified(savedUser.isPhoneVerified())
+                .roles(List.of(savedUser.getRole().name()))
+                .permissions(getUserPermissions(savedUser.getRole()))
+                .sessionId("SESSION_" + System.currentTimeMillis())
+                .maxSessionDuration(1440) // 24 hours in minutes
+                .isSecureSession(true)
+                .welcomeMessage("Welcome to Flight Booking System, " + savedUser.getFirstName() + "!")
+                .build();
     }
 
     public LoginResponseDTO authenticateUser(LoginRequestDTO loginRequest) {
@@ -100,7 +124,7 @@ public class UserServiceImpl {
         userRepository.save(user);
 
         // Generate JWT token
-        String accessToken = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getId());
+        String accessToken = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
         String refreshToken = jwtUtil.generateRefreshToken(user.getUsername());
 
         log.info("User authenticated successfully: {}", user.getUsername());
@@ -109,8 +133,8 @@ public class UserServiceImpl {
                 .accessToken(accessToken)
                 .refreshToken(refreshToken)
                 .tokenType("Bearer")
-                .expiresIn(jwtUtil.getExpirationTime() / 1000) // Convert to seconds
-                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getExpirationTime() / 1000))
+                .expiresIn(86400) // 24 hours in seconds
+                .expiresAt(LocalDateTime.now().plusSeconds(86400))
                 .user(convertToUserSummaryDTO(user))
                 .isFirstLogin(user.getLastLoginDate() == null)
                 .requiresPasswordChange(false)
@@ -136,7 +160,7 @@ public class UserServiceImpl {
 
     public UserResponseDTO getUserById(Long id) {
         User user = userRepository.findById(id)
-                .orElseThrow(() -> new EntityNotFoundException("User not found with ID: " + id));
+                .orElseThrow(() -> new UserNotFoundException("User not found with ID: " + id));
         return convertToUserResponseDTO(user);
     }
 
@@ -170,15 +194,15 @@ public class UserServiceImpl {
         String username = jwtUtil.extractUsername(refreshToken);
         User user = findUserByUsername(username);
 
-        String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getRole().name(), user.getId());
+        String newAccessToken = jwtUtil.generateToken(user.getUsername(), user.getRole().name());
         String newRefreshToken = jwtUtil.generateRefreshToken(user.getUsername());
 
         return LoginResponseDTO.builder()
                 .accessToken(newAccessToken)
                 .refreshToken(newRefreshToken)
                 .tokenType("Bearer")
-                .expiresIn(jwtUtil.getExpirationTime() / 1000)
-                .expiresAt(LocalDateTime.now().plusSeconds(jwtUtil.getExpirationTime() / 1000))
+                .expiresIn(86400)
+                .expiresAt(LocalDateTime.now().plusSeconds(86400))
                 .user(convertToUserSummaryDTO(user))
                 .build();
     }
@@ -198,7 +222,7 @@ public class UserServiceImpl {
 
     private User findUserByUsername(String username) {
         return userRepository.findByUsername(username)
-                .orElseThrow(() -> new EntityNotFoundException("User not found: " + username));
+                .orElseThrow(() -> new UserNotFoundException("User not found: " + username));
     }
 
     private UserResponseDTO convertToUserResponseDTO(User user) {
@@ -209,7 +233,6 @@ public class UserServiceImpl {
                 .firstName(user.getFirstName())
                 .middleName(user.getMiddleName())
                 .lastName(user.getLastName())
-                .fullName(user.getFirstName() + " " + user.getLastName())
                 .phoneNumber(user.getPhoneNumber())
                 .alternatePhoneNumber(user.getAlternatePhoneNumber())
                 .title(user.getTitle())
@@ -243,7 +266,6 @@ public class UserServiceImpl {
     private List<String> getUserPermissions(Role role) {
         return switch (role) {
             case ADMIN -> List.of("READ", "WRITE", "DELETE", "ADMIN");
-            case AGENT -> List.of("READ", "WRITE", "AGENT");
             case USER -> List.of("READ", "WRITE");
         };
     }

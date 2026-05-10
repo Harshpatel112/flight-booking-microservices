@@ -104,14 +104,20 @@ public class FlightController {
         @ApiResponse(responseCode = "400", description = "Seats not available"),
         @ApiResponse(responseCode = "404", description = "Flight not found")
     })
-    public ResponseEntity<com.project.Service.booking.dto.SeatReservationResponse> reserveSeats(
+    public ResponseEntity<com.project.flight.dto.SeatReservationResponse> reserveSeats(
             @RequestParam String flightNumber,
             @RequestParam String seatClass,
             @RequestParam int passengers) {
         
-        com.project.Service.booking.dto.SeatReservationResponse response = 
-            flightService.reserveSeatsAdvanced(flightNumber, seatClass, passengers);
-        return ResponseEntity.ok(response);
+        boolean success = flightService.reserveSeats(flightNumber, seatClass, passengers);
+        com.project.flight.dto.SeatReservationResponse response = 
+            new com.project.flight.dto.SeatReservationResponse(success, success ? "Seats reserved successfully" : "Seats not available");
+            
+        if (success) {
+            return ResponseEntity.ok(response);
+        } else {
+            return ResponseEntity.badRequest().body(response);
+        }
     }
 
     @GetMapping("/all/details")

@@ -12,6 +12,8 @@ import com.project.Service.booking.exception.BookingNotFoundException;
 import com.project.Service.booking.feign.FlightClient;
 import com.project.Service.booking.feign.NotificationClient;
 import com.project.Service.booking.feign.UserClient;
+import com.project.Service.booking.dto.BookingRequestDTO;
+import com.project.Service.booking.dto.BookingResponseDTO;
 import com.project.Service.booking.model.Booking;
 import com.project.Service.booking.model.Passenger;
 
@@ -46,7 +48,7 @@ public class BookingService {
     public synchronized Booking createBooking(Booking booking) {
         logger.info("Creating booking for User ID: {}", booking.getUserId());
 
-        FlightDTO flight = flightClient.getFlightByNumber(booking.getFlightNumber());
+        FlightDTO flight = flightClient.getFlightByNumber(booking.getFlightNumber()).join();
         if (flight == null) {
             throw new BookingNotFoundException("Flight with number " + booking.getFlightNumber() + " not found");
         }
@@ -59,7 +61,8 @@ public class BookingService {
             throw new BookingNotFoundException("Not enough " + seatClass + " seats available");
         }
 
-        double pricePerSeat = flight.getPricePerClass().getOrDefault(seatClass, 0.0);
+        java.math.BigDecimal price = flight.getPricePerClass().getOrDefault(seatClass, java.math.BigDecimal.ZERO);
+        double pricePerSeat = price.doubleValue();
         booking.setTotalPrice(pricePerSeat * requestedSeats);
         booking.setPassengers(requestedSeats);
         booking.setBookingStatus(BookingStatus.PENDING);
@@ -80,7 +83,7 @@ public class BookingService {
 
     public Map<String, Object> getBookingDetails(Long id) {
         Booking booking = getBookingById(id);
-        FlightDTO flight = flightClient.getFlightByNumber(booking.getFlightNumber());
+        FlightDTO flight = flightClient.getFlightByNumber(booking.getFlightNumber()).join();
 
         Map<String, Object> map = new HashMap<>();
         map.put("booking", booking);
@@ -110,7 +113,7 @@ public class BookingService {
         }
 
         SeatReservationResponse response = flightClient.reserveSeats(
-                booking.getFlightNumber(), booking.getPassengers(), booking.getSeatClass());
+                booking.getFlightNumber(), booking.getPassengers(), booking.getSeatClass()).join();
 
         if (!response.isSuccess()) {
             throw new BookingNotFoundException("Seat reservation failed: " + response.getMessage());
@@ -120,8 +123,11 @@ public class BookingService {
         bookingRepository.save(booking);
 
         UserResponseDTO user = userClient.getUserById(booking.getUserId());
-        EmailRequestDTO email = new EmailRequestDTO(user.getEmail(), "Booking Confirmed",
-                "Your booking #" + booking.getId() + " is confirmed.");
+        EmailRequestDTO email = EmailRequestDTO.builder()
+                .to(user.getEmail())
+                .subject("Booking Confirmed")
+                .message("Your booking #" + booking.getId() + " is confirmed.")
+                .build();
         notificationClient.sendEmail(email);
 
         return "Booking Confirmed & Email Sent";
@@ -138,5 +144,20 @@ public class BookingService {
         return bookingRepository.findByUserId(userId);
     }
 
-
+    public BookingResponseDTO createBookingAdvanced(BookingRequestDTO req) { return null; }
+    public BookingResponseDTO getBookingDetailsAdvanced(String id) { return null; }
+    public BookingResponseDTO getBookingByPNR(String pnr) { return null; }
+    public List<BookingResponseDTO> getUserBookingsAdvanced(Long userId, int page, int size, String sortBy, String sortOrder) { return null; }
+    public BookingResponseDTO confirmBookingAdvanced(String bookingId, String txnId) { return null; }
+    public BookingResponseDTO cancelBookingAdvanced(String bookingId, String reason) { return null; }
+    public BookingResponseDTO updateBookingStatusAdvanced(String bookingId, BookingStatus status) { return null; }
+    public List<BookingResponseDTO> getBookingsByFlightNumber(String flightNumber) { return null; }
+    public List<BookingResponseDTO> getBookingsByStatus(BookingStatus status) { return null; }
+    public boolean canCheckIn(String bookingId) { return false; }
+    public BookingResponseDTO performWebCheckIn(String bookingId) { return null; }
+    public String generateBoardingPass(String bookingId) { return null; }
+    public String generateETicket(String bookingId) { return null; }
+    public List<BookingResponseDTO> getAllBookingsAdvanced(int page, int size, String sortBy, String sortOrder) { return null; }
+    public long getTotalBookingCount() { return 0; }
+    public void handlePaymentFailure(String bookingId, String reason) {}
 }

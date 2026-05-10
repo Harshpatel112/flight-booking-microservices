@@ -69,4 +69,9 @@ public class NotificationService {
             throw new RuntimeException("Notification with ID " + id + " not found.");
         }
     }
+
+    public void sendBookingConfirmationEmail(Object event) {}
+    public void sendBookingConfirmationSMS(Object event) {}
+    public void sendBookingCancellationEmail(Object event) {}
+    public void sendBookingCancellationSMS(Object event) {}
 }

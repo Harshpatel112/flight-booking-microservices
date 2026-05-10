@@ -1,6 +1,6 @@
 package com.project.Service.booking.event;
 
-import com.project.Service.booking.service.BookingService;
+import com.project.Service.booking.Service.BookingService;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.kafka.annotation.KafkaListener;
@@ -29,7 +29,9 @@ public class PaymentEventListener {
             log.info("Received payment completed event for booking: {}", event.getBookingId());
             
             // Update booking status to CONFIRMED
-            bookingService.confirmBooking(event.getBookingId(), event.getTransactionId());
+            com.project.Service.booking.dto.ConfirmBookingRequest req = new com.project.Service.booking.dto.ConfirmBookingRequest();
+            req.setBookingId(Long.parseLong(event.getBookingId()));
+            bookingService.confirmBooking(req);
             
             // Publish booking confirmed event for notification service
             Map<String, Object> eventData = new HashMap<>();

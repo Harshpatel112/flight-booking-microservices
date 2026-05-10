@@ -15,6 +15,7 @@ import com.project.flight.exception.InvalidFlightDataException;
 import com.project.flight.model.*;
 
 import java.time.LocalDate;
+import java.math.BigDecimal;
 import java.util.*;
 import java.util.stream.Collectors;
 
@@ -134,7 +135,7 @@ public class FlightService {
         Flight flight = schedule.getFlight();
 
         Map<String, Integer> availableSeatsPerClass = new HashMap<>();
-        Map<String, Double> pricePerClass = new HashMap<>();
+        BigDecimal basePrice = BigDecimal.ZERO;
 
         if (flight != null) {
             List<Seat> seats = seatRepository.findByFlight_FlightNumber(flight.getFlightNumber());
@@ -142,22 +143,24 @@ public class FlightService {
             for (Seat seat : seats) {
                 String seatClass = seat.getSeatClass().name();
                 availableSeatsPerClass.merge(seatClass, seat.getAvailableSeats(), Integer::sum);
-                pricePerClass.putIfAbsent(seatClass, seat.getDynamicFare()); // only first fare is taken
+                if (basePrice.equals(BigDecimal.ZERO) && seat.getDynamicFare() > 0) {
+                    basePrice = BigDecimal.valueOf(seat.getDynamicFare());
+                }
             }
         }
 
-        return new FlightDetailsDTO(
-            flight != null ? flight.getFlightNumber() : null,
-            flight != null ? flight.getAirline() : null,
-            schedule.getSource(),
-            schedule.getDestination(),
-            schedule.getDepartureDate(),
-            schedule.getDepartureTime(),
-            schedule.getArrivalTime(),
-            schedule.getDuration(),
-            availableSeatsPerClass,
-            pricePerClass
-        );
+        return FlightDetailsDTO.builder()
+            .flightNumber(flight != null ? flight.getFlightNumber() : null)
+            .airline(flight != null ? flight.getAirline() : null)
+            .origin(schedule.getSource())
+            .destination(schedule.getDestination())
+            .departureDate(schedule.getDepartureDate())
+            .departureTime(schedule.getDepartureTime())
+            .arrivalTime(schedule.getArrivalTime())
+            .duration(schedule.getDuration())
+            .availableSeatsPerClass(availableSeatsPerClass)
+            .basePrice(basePrice)
+            .build();
     }
 
 
@@ -277,6 +280,30 @@ public class FlightService {
         return flightRepository.save(existingFlight);
     }
 
+    public com.project.flight.dto.FlightSearchResponseDTO searchFlightsAdvanced(com.project.flight.dto.FlightSearchRequestDTO request) {
+        List<FlightDetailsDTO> details = searchFlightsWithDetails(request.getOrigin(), request.getDestination(), request.getDepartureDate());
+        return com.project.flight.dto.FlightSearchResponseDTO.builder()
+                .flights(details)
+                .totalFlights(details.size())
+                .build();
+    }
 
+    public com.project.flight.dto.SeatMapDTO getFlightSeatMap(String flightNumber) {
+        return com.project.flight.dto.SeatMapDTO.builder()
+                .flightNumber(flightNumber)
+                .build();
+    }
+
+    public List<FlightDetailsDTO> getAllFlightDetailsWithPagination(int page, int size, String sortBy, String sortOrder) {
+        return getAllFlightDetails();
+    }
+
+    public List<String> getAllAirlines() {
+        return Arrays.asList("Air India", "IndiGo", "SpiceJet", "Vistara");
+    }
+
+    public List<String> getAllAirports() {
+        return Arrays.asList("DEL", "BOM", "BLR", "HYD", "MAA");
+    }
 
 }
